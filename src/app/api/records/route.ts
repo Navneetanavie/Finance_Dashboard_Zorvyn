@@ -12,21 +12,24 @@ export async function GET(request: Request) {
 
   let query = 'SELECT * FROM financial_records WHERE 1=1';
   const params: any[] = [];
+  let paramCount = 1;
 
   if (type) {
-    query += ' AND type = ?';
+    query += ` AND type = $${paramCount}`;
     params.push(type);
+    paramCount++;
   }
   if (category) {
-    query += ' AND category LIKE ?';
+    query += ` AND category LIKE $${paramCount}`;
     params.push(`%${category}%`);
+    paramCount++;
   }
 
   query += ' ORDER BY date DESC';
 
   try {
-    const records = db.prepare(query).all(params);
-    return NextResponse.json(records);
+    const result = await db.query(query, params);
+    return NextResponse.json(result.rows);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -46,12 +49,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const info = db.prepare(`
-      INSERT INTO financial_records (amount, type, category, date, notes, userId)
-      VALUES (?, ?, ?, ?, ?, ?)
-    `).run(Number(amount), type, category, date, notes || '', userId || 1);
+    const result = await db.query(`
+      INSERT INTO financial_records (amount, type, category, date, notes, "userId")
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id
+    `, [Number(amount), type, category, date, notes || '', userId || 1]);
 
-    return NextResponse.json({ id: info.lastInsertRowid });
+    return NextResponse.json({ id: result.rows[0].id });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
@@ -71,11 +75,11 @@ export async function PUT(request: Request) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    db.prepare(`
+    await db.query(`
       UPDATE financial_records 
-      SET amount = ?, type = ?, category = ?, date = ?, notes = ?
-      WHERE id = ?
-    `).run(Number(amount), type, category, date, notes || '', id);
+      SET amount = $1, type = $2, category = $3, date = $4, notes = $5
+      WHERE id = $6
+    `, [Number(amount), type, category, date, notes || '', id]);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
@@ -95,7 +99,7 @@ export async function DELETE(request: Request) {
   if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
   try {
-    db.prepare('DELETE FROM financial_records WHERE id = ?').run(id);
+    await db.query('DELETE FROM financial_records WHERE id = $1', [id]);
     return NextResponse.json({ success: true });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

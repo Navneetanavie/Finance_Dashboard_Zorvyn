@@ -67,7 +67,21 @@ const Dashboard = () => {
     );
   }
 
-  const { summary, categorySummary, monthlyTrends, weeklyTrends } = data;
+  if (data?.error) {
+    return (
+      <div style={{ padding: '3rem', textAlign: 'center', color: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', borderRadius: '1rem', marginTop: '2rem' }}>
+        <h2 style={{ fontSize: '1.5rem', fontWeight: 'bold', marginBottom: '1rem' }}>Database Connection Error</h2>
+        <p>{data.error}</p>
+      </div>
+    );
+  }
+
+  const { 
+    summary = { netBalance: 0, totalIncome: 0, totalExpenses: 0 }, 
+    categorySummary = [], 
+    monthlyTrends = [], 
+    weeklyTrends = [] 
+  } = data || {};
 
   const pieData = {
     labels: categorySummary.map((c: any) => c.category),

@@ -36,7 +36,18 @@ const TransactionsPage = () => {
       headers: { 'x-user-role': r }
     })
       .then(res => res.json())
-      .then(setTransactions);
+      .then(d => {
+        if (d && d.error) {
+          console.error('API Error:', d.error);
+          setTransactions([]);
+        } else {
+          setTransactions(Array.isArray(d) ? d : []);
+        }
+      })
+      .catch(err => {
+        console.error('Fetch Error:', err);
+        setTransactions([]);
+      });
   };
 
   const filteredTransactions = useMemo(() => {

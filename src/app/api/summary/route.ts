@@ -3,56 +3,55 @@ import db, { initDb } from '@/lib/db';
 
 export async function GET() {
   try {
-    initDb(); // Ensure tables exist
+    await initDb();
 
-    const records = db.prepare('SELECT * FROM financial_records').all() as any[];
+    const recordsRes = await db.query('SELECT * FROM financial_records');
+    const records = recordsRes.rows;
 
     const totalIncome = records
       .filter(r => r.type === 'income')
-      .reduce((sum, r) => sum + r.amount, 0);
+      .reduce((sum, r) => sum + Number(r.amount), 0);
 
     const totalExpenses = records
       .filter(r => r.type === 'expense')
-      .reduce((sum, r) => sum + r.amount, 0);
+      .reduce((sum, r) => sum + Number(r.amount), 0);
 
     const netBalance = totalIncome - totalExpenses;
 
-    const categorySummary = db.prepare(`
+    const categorySummaryRes = await db.query(`
       SELECT category, SUM(amount) as total 
       FROM financial_records 
       WHERE type = 'expense' 
       GROUP BY category
-    `).all();
+    `);
 
-    // 5 newest items in descending order of date and time
-    const recentActivity = db.prepare(`
+    const recentActivityRes = await db.query(`
       SELECT * FROM financial_records 
       ORDER BY date DESC, id DESC LIMIT 5
-    `).all();
+    `);
 
-    // Monthly Trends (Past 6 months)
-    const monthlyTrends = db.prepare(`
+    const monthlyTrendsRes = await db.query(`
       SELECT 
-        strftime('%Y-%m', date) as month,
+        to_char(date::date, 'YYYY-MM') as month,
         SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income,
         SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense
       FROM financial_records
       GROUP BY month
-      ORDER BY month DESC, id DESC
+      ORDER BY month DESC
       LIMIT 6
-    `).all().reverse();
+    `);
+    const monthlyTrends = monthlyTrendsRes.rows.reverse();
 
-    // Weekly Trends (Last 7 days)
-    const weeklyTrends = db.prepare(`
+    const weeklyTrendsRes = await db.query(`
       SELECT 
-        date,
+        to_char(date::date, 'YYYY-MM-DD') as date,
         SUM(CASE WHEN type = 'income' THEN amount ELSE 0 END) as income,
         SUM(CASE WHEN type = 'expense' THEN amount ELSE 0 END) as expense
       FROM financial_records
-      WHERE date >= date('now', '-7 days')
+      WHERE date::date >= CURRENT_DATE - INTERVAL '7 days'
       GROUP BY date
       ORDER BY date ASC
-    `).all();
+    `);
 
     return NextResponse.json({
       summary: {
@@ -60,10 +59,10 @@ export async function GET() {
         totalExpenses,
         netBalance,
       },
-      categorySummary,
-      recentActivity,
+      categorySummary: categorySummaryRes.rows,
+      recentActivity: recentActivityRes.rows,
       monthlyTrends,
-      weeklyTrends
+      weeklyTrends: weeklyTrendsRes.rows
     });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

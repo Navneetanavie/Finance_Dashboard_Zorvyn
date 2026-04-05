@@ -3,7 +3,7 @@ import db, { initDb } from '@/lib/db';
 
 export async function POST(request: Request) {
   try {
-    initDb(); // Ensure tables exist
+    await initDb();
 
     const { email, role, name } = await request.json();
 
@@ -11,8 +11,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email and role are required' }, { status: 400 });
     }
 
-    // Check if user exists
-    let user = db.prepare('SELECT * FROM users WHERE email = ?').get(email) as any;
+    const userRes = await db.query('SELECT * FROM users WHERE email = $1', [email]);
+    let user = userRes.rows[0];
 
     if (user && user.role !== role) {
       return NextResponse.json({ 
@@ -21,16 +21,16 @@ export async function POST(request: Request) {
     }
 
     if (!user) {
-      // Register new user
-      const info = db.prepare(`
+      const result = await db.query(`
         INSERT INTO users (name, email, role, status)
-        VALUES (?, ?, ?, 'active')
-      `).run(name || email.split('@')[0], email, role);
+        VALUES ($1, $2, $3, 'active')
+        RETURNING id
+      `, [name || email.split('@')[0], email, role]);
       
-      user = db.prepare('SELECT * FROM users WHERE id = ?').get(info.lastInsertRowid);
+      const newUserRes = await db.query('SELECT * FROM users WHERE id = $1', [result.rows[0].id]);
+      user = newUserRes.rows[0];
     }
 
-    // In a real app we'd set a cookie here. For this mock, we return the user.
     return NextResponse.json(user);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });

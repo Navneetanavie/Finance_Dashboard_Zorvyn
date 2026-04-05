@@ -16,7 +16,17 @@ const UsersPage = () => {
     fetch('/api/users')
       .then(res => res.json())
       .then(d => {
-        setUsers(d);
+        if (d && d.error) {
+          console.error('API Error:', d.error);
+          setUsers([]);
+        } else {
+          setUsers(Array.isArray(d) ? d : []);
+        }
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error('Fetch Error:', err);
+        setUsers([]);
         setLoading(false);
       });
   };
