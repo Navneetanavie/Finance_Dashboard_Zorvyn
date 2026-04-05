@@ -1,43 +1,36 @@
-# 💰 Finance Dashboard - Pro Overhaul
+# Finance Dashboard
 
-A premium, secure, and data-driven Financial Management System built with **Next.js 14**, **SQLite**, and **Framer Motion**. This dashboard provides real-time insights into income, expenses, and net balance with a focus on Role-Based Access Control (RBAC).
+A role-based, full-stack financial analytics dashboard engineered for dynamic data visualization and strict access control. 
 
-## 🚀 Features
+## Tech Stack 🛠️
 
-- **🔐 Secure Authentication**: Dual-pane login flow with auto-registration.
-- **📊 Advanced Analytics**: Monthly and Weekly trend visualization using Chart.js.
-- **🛡️ Rigid RBAC**:
-  - **Admin**: Full management of records and users.
-  - **Analyst**: View-only access to transaction logs and insights.
-  - **Viewer**: Restricted to dashboard summary data only.
-- **💸 Transaction Management**: Real-time search, category filtering, and newest-first ordering.
-- **🧬 Tech Stack**: Next.js (App Router), better-sqlite3, Tailwind CSS, Lucide Icons, and Framer Motion.
+- **Frontend Core:** Next.js, React, TypeScript
+- **Styling & Icons:** Custom CSS, Framer Motion (Animations), Lucide React (Icons)
+- **Data Visualization:** Chart.js & `react-chartjs-2`
+- **Backend & API:** Next.js Serverless Route Handlers
+- **Database Architecture:** PostgreSQL (Hosted on Supabase) via `pg` (node-postgres pooler)
+- **Deployment:** Vercel
 
-## 🛠️ Getting Started
+## Role-Based Access Control (RBAC) 🔐
 
-1. **Install Dependencies**:
-   ```bash
-   npm install
-   ```
+This dashboard implements strict role-based access management across different tiers of operation.
 
-2. **Run Development Server**:
-   ```bash
-   npm run dev
-   ```
+### 1. Viewers
+- **Dashboard:** Full read-only access to high-level financial summary analytics, pie charts, and monthly/weekly trends.
+- **Transactions:** Restricted. Viewers are blocked at the route and API level from viewing granular transaction logs and are safely redirected.
+- **User Management:** Restricted. Cannot view or alter system roles.
 
-3. **Production Build**:
-   ```bash
-   npm run build
-   npm start
-   ```
+### 2. Analysts
+- **Dashboard:** Full read-only access to analytics.
+- **Transactions:** Permitted to query, filter, and view the entire transaction log.
+- **Data Mutations:** Restricted. Analysts are blocked from creating (`POST`), editing (`PUT`), or deleting (`DELETE`) any financial records.
+- **User Management:** Restricted.
 
-## 📂 Project Structure
-
-- `src/app`: Next.js pages and API routes.
-- `src/components`: Reusable UI components (Sidebar, StatCards, etc.).
-- `src/lib/db.ts`: SQLite database initialization and connection.
-- `src/styles/globals.css`: Premium design system tokens and global styles.
+### 3. Admins
+- **Dashboard:** Full access.
+- **Transactions:** Full administrative rights. Capable of viewing, adding new transactions, updating existing records, and executing deletions.
+- **User Management:** Full access to the Management interface to onboard teammates and elevate privilege levels to active/inactive users.
 
 ---
 
-*Part of the Finance Dashboard Overhaul Project.*
+> **Note:** Commits were made using my work Git configuration, but this is a personal project built by me.
